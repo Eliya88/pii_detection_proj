@@ -1,4 +1,4 @@
-model_name: "gemini-1.5-flash"
+model_name: "gemini-2.5-flash"
 max_output_tokens: 1024
 temperature: 0.0
 sample_size: 500        # number of test records to evaluate (cost control)
