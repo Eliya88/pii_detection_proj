@@ -1,0 +1,8 @@
+model_name: "gemini-1.5-flash"
+max_output_tokens: 1024
+temperature: 0.0
+sample_size: 500        # number of test records to evaluate (cost control)
+few_shot_k: 5           # examples in few-shot prompt (0 = zero-shot)
+seed: 42
+data_dir: "data/processed"
+output_dir: "outputs/results"

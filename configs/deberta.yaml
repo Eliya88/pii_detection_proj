@@ -1,0 +1,19 @@
+model_name: "microsoft/deberta-v3-base"
+data_dir: "data/processed"
+output_dir: "outputs/checkpoints/deberta"
+
+# tokenisation
+max_length: 512
+
+# optimiser
+learning_rate: 2.0e-5
+weight_decay: 0.01
+warmup_ratio: 0.1
+
+# training loop
+batch_size: 16
+gradient_accumulation_steps: 2   # effective batch = 32
+epochs: 10
+patience: 3                       # early-stopping on val F1
+fp16: true
+seed: 42
