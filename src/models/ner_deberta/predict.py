@@ -1,6 +1,7 @@
 """Batch inference with a fine-tuned DeBERTa token-classifier."""
 from __future__ import annotations
 import sys
+import time
 from pathlib import Path
 
 import torch
@@ -71,15 +72,20 @@ def predict_and_save(
     from src.evaluation.metrics import compute_metrics_from_sequences
 
     records = load_jsonl(test_path)
+
+    t0 = time.perf_counter()
     preds   = predict(records, model_dir, batch_size=batch_size, max_length=max_length)
+    elapsed = time.perf_counter() - t0
+    latency_ms = (elapsed / len(records)) * 1000
 
     true_labels = [r["labels"] for r in records]
     metrics     = compute_metrics_from_sequences(true_labels, preds)
+    metrics["latency_ms_per_record"] = round(latency_ms, 3)
 
     result = {"metrics": metrics, "predictions": preds}
     save_json(result, output_path)
     print(f"Results saved → {output_path}")
-    print(f"  F1={metrics['f1']:.4f}  P={metrics['precision']:.4f}  R={metrics['recall']:.4f}")
+    print(f"  F1={metrics['f1']:.4f}  P={metrics['precision']:.4f}  R={metrics['recall']:.4f}  latency={latency_ms:.1f} ms/rec")
     return result
 
 

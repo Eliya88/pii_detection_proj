@@ -1,8 +1,11 @@
 """Presidio-based PII detection (Model 1 – REGEX / Rule-based)."""
 from __future__ import annotations
+import re
 import sys
 import time
 from pathlib import Path
+
+_EMAIL_RE = re.compile(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
@@ -60,7 +63,15 @@ def build_analyzer() -> AnalyzerEngine:
         "models": [{"lang_code": "en", "model_name": "en_core_web_lg"}],
     })
     nlp_engine = provider.create_engine()
-    analyzer = AnalyzerEngine(nlp_engine=nlp_engine, supported_languages=["en"])
+    try:
+        analyzer = AnalyzerEngine(nlp_engine=nlp_engine, supported_languages=["en"])
+    except TypeError:
+        analyzer = AnalyzerEngine(nlp_engine=nlp_engine)
+    # Remove the CryptoRecognizer — it crashes on some text in this Presidio version
+    analyzer.registry.recognizers = [
+        r for r in analyzer.registry.recognizers
+        if "crypto" not in type(r).__name__.lower()
+    ]
     for rec in get_custom_recognizers():
         analyzer.registry.add_recognizer(rec)
     return analyzer
@@ -83,6 +94,20 @@ def predict_record(
         unified = PRESIDIO_TO_UNIFIED.get(r.entity_type)
         if unified:
             spans.append({"type": unified, "start": r.start, "end": r.end})
+
+    # Presidio's built-in EMAIL_ADDRESS recognizer misses many emails (its URL
+    # recognizer catches the domain part instead). Run our own email regex on
+    # the full text and add EMAIL spans.
+    email_spans = []
+    for m in _EMAIL_RE.finditer(text):
+        email_spans.append({"type": "EMAIL", "start": m.start(), "end": m.end()})
+
+    # Remove URL/PERSON spans that overlap with detected emails
+    if email_spans:
+        def _overlaps_email(s):
+            return any(s["start"] < e["end"] and s["end"] > e["start"] for e in email_spans)
+        spans = [s for s in spans if not _overlaps_email(s)]
+        spans.extend(email_spans)
 
     return char_spans_to_bio(tokens, char_starts, spans)
 

@@ -10,7 +10,7 @@ from src.utils.io import load_json, save_json
 MODEL_FILES = {
     "Presidio (REGEX)":     "outputs/results/regex_results.json",
     "DeBERTa-v3 (NER)":     "outputs/results/ner_results.json",
-    "Gemini 1.5 Flash (LLM)":"outputs/results/llm_results.json",
+    "Gemini 2.5 Flash (LLM)":"outputs/results/llm_results.json",
 }
 
 ENTITY_TYPES = ["PERSON", "EMAIL", "PHONE", "ADDRESS", "URL", "ID", "USERNAME"]

@@ -34,6 +34,7 @@ _AI4PRIVACY: dict[str, str | None] = {
     # Person
     "GIVENNAME": "PERSON", "GIVENNAME1": "PERSON", "GIVENNAME2": "PERSON",
     "SURNAME":   "PERSON", "SURNAME1":   "PERSON", "SURNAME2":   "PERSON",
+    "FIRSTNAME": "PERSON", "LASTNAME":   "PERSON",
     "FULLNAME":  "PERSON", "NAME":       "PERSON", "MIDDLENAME": "PERSON",
     "PREFIX":    "PERSON", "SUFFIX":     "PERSON",
     "NICKNAME":  "PERSON", "ALIAS":      "PERSON",

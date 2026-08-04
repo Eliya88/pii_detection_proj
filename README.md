@@ -15,9 +15,9 @@ This project compares three approaches for detecting Personally Identifiable Inf
 
 | Model | Type | F1 | Latency |
 |---|---|---|---|
-| Microsoft Presidio | Rule-based (REGEX + NLP) | 42.1% | 14 ms/rec |
-| DeBERTa-v3-base | Fine-tuned NER | **99.0%** | — |
-| Gemini 2.5 Flash | LLM (few-shot prompting) | 17.6% | 2196 ms/rec |
+| Microsoft Presidio | Rule-based (REGEX + NLP) | 46.2% | 13.3 ms/rec |
+| DeBERTa-v3-base | Fine-tuned NER | **98.4%** | 13.1 ms/rec (GPU) |
+| Gemini 2.5 Flash | LLM (7-shot prompting) | 80.0% | 2078 ms/rec |
 
 ---
 
@@ -105,7 +105,7 @@ DeBERTa training was performed on the BGU HPC cluster (RTX 3090 24GB, 10 epochs,
 
 ## Key Findings
 
-- **Fine-tuned DeBERTa** achieves near-perfect F1 (99%) across all entity types, demonstrating the power of supervised NER on in-domain data.
-- **Presidio** performs well on structured PII (PHONE: 72%, ID: 50%) but struggles with context-dependent entities like ADDRESS.
-- **Gemini** shows lower strict F1 due to span boundary mismatches under seqeval's exact-match criterion, not because it fails to understand PII conceptually.
-- **Speed vs. accuracy tradeoff:** Presidio is fastest (14 ms), DeBERTa is most accurate, Gemini is slowest (2.2 s) with highest per-call cost.
+- **Fine-tuned DeBERTa** achieves near-perfect F1 (98.4%) across all entity types, with ID at 100% and EMAIL at 99.6%.
+- **Presidio** performs well on PHONE (73.8%) and EMAIL (46.8%) but struggles with ADDRESS (37.4%) and ID (28.9%).
+- **Gemini** achieves strong F1 (80.0%) using only 7-shot prompting with no training, excelling on EMAIL (89.8%) and PERSON (81.4%).
+- **Speed vs. accuracy tradeoff:** Presidio and DeBERTa are equally fast (~13 ms on GPU), Gemini is 160× slower (2.1 s) with per-call API cost.

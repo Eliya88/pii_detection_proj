@@ -55,7 +55,7 @@ def _extract_json(text: str) -> list:
 
 
 def _validate_spans(spans: list, text: str) -> list:
-    """Drop spans with invalid offsets or unknown types."""
+    """Drop spans with unknown types or missing text field."""
     valid_types = {"PERSON", "EMAIL", "PHONE", "ADDRESS", "URL", "ID", "USERNAME"}
     clean = []
     for s in spans:
@@ -63,13 +63,53 @@ def _validate_spans(spans: list, text: str) -> list:
             continue
         if s.get("type") not in valid_types:
             continue
-        start, end = s.get("start"), s.get("end")
-        if not (isinstance(start, int) and isinstance(end, int)):
-            continue
-        if not (0 <= start < end <= len(text)):
+        if not s.get("text"):
             continue
         clean.append(s)
     return clean
+
+
+def _fix_span_offsets(spans: list, text: str) -> list:
+    """Replace Gemini's character offsets with real positions found by string search.
+
+    Gemini knows *what* the PII text is but miscounts character positions in long
+    documents. We use the entity text as a search key and pick the occurrence
+    closest to Gemini's claimed start (so we handle repeated names correctly).
+    """
+    fixed = []
+    for span in spans:
+        entity_text = span["text"]
+        claimed_start = span.get("start", 0) or 0
+
+        # Find all exact occurrences
+        occurrences = []
+        pos = 0
+        while True:
+            idx = text.find(entity_text, pos)
+            if idx == -1:
+                break
+            occurrences.append(idx)
+            pos = idx + 1
+
+        # Fall back to case-insensitive search
+        if not occurrences:
+            tl, el = text.lower(), entity_text.lower()
+            pos = 0
+            while True:
+                idx = tl.find(el, pos)
+                if idx == -1:
+                    break
+                occurrences.append(idx)
+                pos = idx + 1
+
+        if not occurrences:
+            continue  # entity text genuinely not in source — skip
+
+        # Pick occurrence nearest to Gemini's claimed position
+        best = min(occurrences, key=lambda x: abs(x - claimed_start))
+        fixed.append({**span, "start": best, "end": best + len(entity_text)})
+
+    return fixed
 
 
 def predict_record(text: str, tokens: list[str], client, few_shot_k: int,
@@ -89,6 +129,7 @@ def predict_record(text: str, tokens: list[str], client, few_shot_k: int,
 
     spans = _extract_json(raw)
     spans = _validate_spans(spans, text)
+    spans = _fix_span_offsets(spans, text)  # anchor offsets to real text positions
 
     _, char_starts = tokens_to_text_with_offsets(tokens, trailing_ws)
     return char_spans_to_bio(tokens, char_starts, spans)
